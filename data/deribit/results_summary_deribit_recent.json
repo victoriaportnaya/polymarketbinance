@@ -1,0 +1,65 @@
+{
+  "venue": "deribit",
+  "sample": "2025_2026_polymarket_btc_above_daily",
+  "window_utc": {
+    "start_ms": 1770318538085,
+    "end_ms": 1774206538085
+  },
+  "polymarket_series": "bitcoin above on [date] (Binance 1m close resolution)",
+  "options_source": "Deribit public get_tradingview_chart_data (hourly)",
+  "spot_source": "Deribit BTC-PERPETUAL (hourly close)",
+  "friction_scalar_tf": 0.0078,
+  "pooled": {
+    "n": 518,
+    "markets": 3,
+    "mean_D": -0.021280170136223686,
+    "hac_ci_lo": -0.029863778663622144,
+    "hac_ci_hi": -0.012696561608825227,
+    "t_stat": -9.41737898378731,
+    "t_p_value": 1.526009923023483e-19,
+    "bootstrap_ci_lo": -0.03169632576918444,
+    "bootstrap_ci_hi": -0.012967119345364483,
+    "share_outside_ci_adj": 0.8378378378378378
+  },
+  "markets": [
+    {
+      "market_id": "1385965",
+      "market_label": "BTC above $70,000 on Feb 23, 2026",
+      "n": 386,
+      "mean_D": -0.03198881287739697,
+      "ci_lo": -0.04190649787481179,
+      "ci_hi": -0.022071127879982156,
+      "t_stat": -11.936048290100228,
+      "p_value": 3.701893555989834e-28,
+      "mean_p_poly": 0.002945769151593996,
+      "mean_p_fair": 0.034934582028990975,
+      "share_outside_ci_adj": 0.8730569948186528
+    },
+    {
+      "market_id": "1607681",
+      "market_label": "BTC above $70,000 on Mar 23, 2026",
+      "n": 77,
+      "mean_D": 0.0042221384832548114,
+      "ci_lo": -0.00740194480278817,
+      "ci_hi": 0.015846221769297793,
+      "t_stat": 1.0019468682526962,
+      "p_value": 0.3195487427096603,
+      "mean_p_poly": 0.501351645903081,
+      "mean_p_fair": 0.49712950741982614,
+      "share_outside_ci_adj": 0.7142857142857143
+    },
+    {
+      "market_id": "1628635",
+      "market_label": "BTC above $70,000 on Mar 24, 2026",
+      "n": 55,
+      "mean_D": 0.018171799580013526,
+      "ci_lo": 0.013316255711602646,
+      "ci_hi": 0.023027343448424407,
+      "t_stat": 7.782339445654842,
+      "p_value": 2.2168086160215732e-10,
+      "mean_p_poly": 0.49363636391356386,
+      "mean_p_fair": 0.4754645643335502,
+      "share_outside_ci_adj": 0.7636363636363637
+    }
+  ]
+}

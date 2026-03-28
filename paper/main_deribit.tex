@@ -1,0 +1,773 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage[numbers]{natbib}
+\usepackage{setspace}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{threeparttable}
+
+\hypersetup{colorlinks=true,citecolor=blue,linkcolor=blue,urlcolor=blue}
+\setstretch{1.12}
+\setlength{\parindent}{15pt}
+\setlength{\parskip}{0pt}
+\captionsetup{
+    font=small,
+    labelfont=bf,
+    justification=justified,
+    singlelinecheck=false
+}
+\captionsetup[subfigure]{font=small}
+\numberwithin{equation}{section}
+\allowdisplaybreaks[2]
+
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}[section]
+
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begin{center}
+    {\LARGE \bfseries \@title \par}
+    \vspace{1em}
+    {\normalsize \@date \par}
+  \end{center}
+  \vspace{1em}
+}
+\makeatother
+
+\renewenvironment{abstract}
+  {\begin{center}\bfseries Abstract\end{center}\begin{quote}\small}
+  {\end{quote}\vspace{1em}}
+
+\title{Risk-Neutral Binary Probabilities and Prediction-Market Prices:\\ Deribit Options vs.\ Polymarket (2026 Daily Bitcoin-Above Series)}
+\author{}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This paper applies the same framework to \textbf{live 2026} Polymarket contracts in the recurring ``Bitcoin above [dollar threshold] on [calendar date]?'' series, each matched to a Deribit European call with the same strike and listed daily expiry (symbol pattern \texttt{BTC-23MAR26-70000-C}, etc.). The discrepancy is again $D_t = P_{poly,t} - P_{fair,t}$, with Deribit hourly marks converted BTC$\to$USD off \texttt{BTC-PERPETUAL} closes. Polymarket resolution for these events is defined off Binance BTC/USDT prints, whereas the option benchmark uses Deribit prices; that index mismatch is an explicit limitation. Over a rolling forty-five-day window ending at build time, the \textbf{principal} specification is ``above \$70{,}000 on March 23, 2026?'' (Gamma id 1607681) vs.\ \texttt{BTC-23MAR26-70000-C}: $n=78$ hours, $\bar{D}=0.0043$, classical $t=1.03$, $p=0.31$, and HAC 95\% interval $[-0.0072,\,0.0158]$ (so zero is not rejected at conventional levels). A pooled stack of three \$70{,}000 contracts (February 23, March 23, and March 24, 2026) yields $n=515$, $\bar{D}_{pool}=-0.0212$, HAC interval $[-0.0298,\,-0.0126]$, bootstrap interval $[-0.0317,\,-0.0127]$, and $p=3.32\times 10^{-19}$ for a test of $\mathbb{E}[D]=0$. Thus the recent sample displays \textbf{cross-sectional heterogeneity} (one market near the benchmark, one modestly above, one month dominated by deep out-of-the-money pricing) and a \textbf{negative} pooled mean driven largely by the long February subsample.
+\end{abstract}
+
+\section{Introduction}
+Prediction-market prices are often interpreted as probabilities, but the appropriate benchmark depends on the payoff under study. For a threshold contract that pays one dollar if Bitcoin exceeds a fixed level at a fixed date, the natural asset-pricing comparison is not a historical frequency or a reduced-form forecast, but the price of a digital option written on the same underlying, strike, and maturity. Under no-arbitrage valuation, that digital price is a discounted risk-neutral probability. This observation motivates the central question of the paper: do Polymarket Bitcoin threshold prices coincide, on average, with the risk-neutral probabilities implied by Deribit option prices?
+
+The appeal of this question is that it isolates a sharply defined cross-market comparison. If the two venues price the same state-contingent payoff, then after accounting for discounting, sampling uncertainty, bid--ask spreads, and fees, the average discrepancy should be close to zero. If instead one venue systematically prices above or below the other, then the mean difference between the prediction-market price and the option-implied digital benchmark should be detectably nonzero.
+
+The paper contributes on both methodology and evidence. On the methodological side, it formulates the comparison in a way that is fully aligned with statistical inference: a vanilla option price is inverted to recover implied volatility, that volatility estimate is mapped into a digital benchmark, uncertainty is propagated through the delta method, and the resulting discrepancy process is evaluated with both classical and dependence-robust procedures \citep{casella2002,newey1987}. On the empirical side, the analysis uses Deribit public hourly option and perpetual futures candles (BTC-denominated option marks converted to USD), together with Polymarket trade-level data transformed into a common Yes-probability scale.
+
+Relative to the 2023 archive replication in \texttt{main\_deribit\_archive\_2023.tex}, the 2026 design differs in contract design (daily Binance-close threshold events), shorter trading history per listing, and a strike/expiry menu discovered through Gamma \texttt{public-search}. The principal March 23 market shows a small positive $\bar{D}$ but weak classical evidence against $\mathbb{E}[D]=0$. The pooled estimate is negative and statistically precise, primarily because the February contract contributes many hours when the Yes price was extremely low while the Deribit-implied digital remained strictly positive.
+
+\section{Data}
+\subsection{Contract mapping}
+The empirical strategy requires a precise mapping between the prediction-market contract and the centralized options contract. Consider a Polymarket Yes share that pays one unit at maturity $T$ if the terminal Bitcoin level exceeds a threshold $K$. Abstracting from venue-specific settlement conventions, this payoff is the binary indicator $\mathbf{1}\{S_T > K\}$. Under a frictionless no-arbitrage benchmark with constant short rate $r$, its time-$t$ price is
+\[
+e^{-r\tau_t}\mathbb{E}^{\mathbb{Q}}\!\left[\mathbf{1}\{S_T > K\}\mid\mathcal{F}_t\right],
+\qquad
+\tau_t = \frac{T-t}{365}.
+\]
+Under Black--Scholes, this expectation is exactly the value of a cash-or-nothing digital call. The prediction-market price can therefore be compared directly with an option-implied digital value once the latent volatility parameter is estimated from an observed vanilla call.
+
+\subsection{Sources and sample}
+The empirical analysis combines three public data sources.
+\begin{enumerate}
+    \item Deribit European BTC option data are taken from the public \texttt{get\_tradingview\_chart\_data} endpoint at sixty-minute resolution. Reported option closes are in BTC; each is multiplied by the concurrent \texttt{BTC-PERPETUAL} close in USD to obtain a USD vanilla premium comparable to the Black--Scholes formula stated below.
+    \item The spot reference is the Deribit \texttt{BTC-PERPETUAL} hourly close (USD), merged on timestamp with the option leg.
+    \item Polymarket prices are constructed from public transaction-level trade data and, where available, from historical hourly prices \citep{polymarketdocs}.
+\end{enumerate}
+
+Markets are drawn from the active event group titled ``Bitcoin above \_\_\_ on [date]?'' on Polymarket. Each binary references a threshold $K$ and a calendar date; resolution uses a specified Binance BTC/USDT one-minute candle (see the Gamma event text). The main single-market specification is ``Will the price of Bitcoin be above \$70{,}000 on March 23?'' (Gamma market id 1607681), matched to \texttt{BTC-23MAR26-70000-C}. The pooled panel adds ``above \$70{,}000 on February 23?'' (id 1385965, \texttt{BTC-23FEB26-70000-C}) and ``above \$70{,}000 on March 24?'' (id 1628635, \texttt{BTC-24MAR26-70000-C}). The empirical window is a rolling lookback (forty-five days by default) ending at the time \texttt{build\_paper\_artifacts\_deribit\_recent.py} is executed; exact UTC bounds are stored in \texttt{results\_summary\_deribit\_recent.json}. Updated ids for new calendar dates can be generated with \texttt{discover\_polymarket\_deribit\_pairs.py}.
+
+\subsection{Variables}
+For each aligned observation time $t$, let
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Variable & Definition \\
+\midrule
+$C_{mkt,t}$ & Deribit option USD premium, BTC mark times perpetual close \\
+$S_t$ & Deribit \texttt{BTC-PERPETUAL} reference close (USD) \\
+$K$ & Strike level appearing in both contracts \\
+$\tau_t$ & Remaining time to Polymarket expiration, in years using a 365-day convention \\
+$\tau_t^{(c)}$ & Remaining time to Deribit option expiration \\
+$P_{poly,t}$ & Polymarket Yes price on the unit interval \\
+$s_{B,t}$ & (Scalar specification) folded into constant $TF_t$ below \\
+$s_P$ & Polymarket spread parameter used in the friction adjustment \\
+$f_B,f_P$ & Fee parameters used in the scalar friction term \\
+$D_t$ & Pricing discrepancy $P_{poly,t}-P_{fair,t}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All Polymarket observations are placed on the Yes-probability scale. A Yes trade with price $p$ contributes $p$, while a No trade with price $p$ contributes $1-p$. This transformation is necessary to ensure that all observations can be interpreted against the same binary event probability.
+
+\subsection{Time alignment}
+Time alignment proceeds at hourly frequency. Deribit perpetual and option bars share a common timestamp grid. Polymarket observations are merged backward to the latest available Polymarket quote or trade at or before that timestamp. The staleness tolerance is set to zero beyond the matched observation. Observations with extremely short maturity are excluded through a lower bound on time-to-expiration to avoid numerically unstable implied-volatility estimates.
+
+\section{Model and Inference}
+\subsection{Black--Scholes benchmark}
+Let $S_t$ denote the underlying Bitcoin level, $K$ the strike, $r$ the continuously compounded short rate, and $\sigma$ the instantaneous volatility parameter. Under the Black--Scholes model \citep{black1973}, the European call price is
+\[
+C_{BS}(S_t,K,r,\tau,\sigma)
+=
+S_t\Phi(d_1)-Ke^{-r\tau}\Phi(d_2),
+\]
+where
+\[
+d_1
+=
+\frac{\log(S_t/K)+(r+\sigma^2/2)\tau}{\sigma\sqrt{\tau}},
+\qquad
+d_2=d_1-\sigma\sqrt{\tau}.
+\]
+The corresponding discounted digital call price is
+\[
+P_{fair,t}(\sigma)
+=
+e^{-r\tau_t}\Phi(d_{2,t}(\sigma)).
+\]
+This quantity is interpreted as the option-implied risk-neutral probability benchmark for the prediction-market event.
+
+The formula follows from the risk-neutral law of the terminal asset price. Under Black--Scholes,
+\[
+\log S_T
+=
+\log S_t+\left(r-\frac{1}{2}\sigma^2\right)\tau+\sigma\sqrt{\tau}\,Z,
+\qquad
+Z\sim N(0,1).
+\]
+Therefore
+\[
+\mathbb{Q}(S_T>K\mid\mathcal{F}_t)
+=
+\mathbb{Q}\!\left(
+Z>
+\frac{\log(K/S_t)-\left(r-\sigma^2/2\right)\tau}{\sigma\sqrt{\tau}}
+\right)
+=
+\Phi(d_2),
+\]
+so discounting the unit payoff $\mathbf{1}\{S_T>K\}$ yields
+\[
+e^{-r\tau}\mathbb{E}^{\mathbb{Q}}\!\left[\mathbf{1}\{S_T>K\}\mid \mathcal{F}_t\right]
+=
+e^{-r\tau}\Phi(d_2).
+\]
+This expression is the natural risk-neutral benchmark for the prediction-market contract; a formal statement and proof are given in Proposition~\ref{prop:digital-price}.
+
+\subsection{Implied-volatility inversion}
+The latent volatility parameter at time $t$ is defined implicitly by
+\[
+C_{mkt,t}=C_{BS}(S_t,K,r,\tau_t^{(c)},\sigma_t).
+\]
+Define
+\[
+F_t(\sigma)=C_{BS}(S_t,K,r,\tau_t^{(c)},\sigma)-C_{mkt,t}.
+\]
+Then $\hat{\sigma}_t$ is the numerical root of $F_t(\sigma)=0$. A Newton iteration takes the form
+\[
+\sigma^{(m+1)}
+=
+\sigma^{(m)}
+-
+\frac{C_{BS}(S_t,K,r,\tau_t^{(c)},\sigma^{(m)})-C_{mkt,t}}
+{\mathcal{V}(S_t,K,r,\tau_t^{(c)},\sigma^{(m)})},
+\]
+where $\mathcal{V}=\partial C_{BS}/\partial \sigma$ is Black--Scholes vega. Since
+\[
+\mathcal{V}(S_t,K,r,\tau,\sigma)=S_t\phi(d_1)\sqrt{\tau},
+\]
+the Newton step is exactly the ratio of the pricing residual to vega, with the vega formula stated formally in Proposition~\ref{prop:vega-formula}. Convergence alone is not sufficient for acceptance: the recovered implied volatility is retained only if the reconstructed call price matches the observed market price up to a relative tolerance and vega remains above a numerical floor. This additional filter is important because deep out-of-the-money short-dated options can produce formally convergent but economically unreliable implied-volatility values.
+
+The fair binary benchmark used in the empirical analysis is therefore
+\[
+P_{fair,t}
+=
+e^{-r\tau_t}\Phi\!\left(d_{2,t}(\hat{\sigma}_t)\right).
+\]
+
+\subsection{Delta-method uncertainty propagation}
+The option-implied benchmark is a nonlinear transform of an estimated volatility parameter. To approximate its sampling uncertainty, the paper uses the delta method. Writing $g(\sigma)=e^{-r\tau_t}\Phi(d_{2,t}(\sigma))$, one has
+\[
+\operatorname{Var}(\widehat{P}_{fair,t})
+\approx
+\left(g'(\hat{\sigma}_t)\right)^2\operatorname{Var}(\hat{\sigma}_t).
+\]
+To evaluate $g'$, first write
+\[
+d_2(\sigma)
+=
+\frac{\log(S_t/K)+(r+\sigma^2/2)\tau_t}{\sigma\sqrt{\tau_t}}
+-\sigma\sqrt{\tau_t}.
+\]
+Differentiating gives
+\[
+\frac{\partial d_{2,t}(\sigma)}{\partial \sigma}
+=
+-\frac{\log(S_t/K)+r\tau_t}{\sigma^2\sqrt{\tau_t}}
+-\frac{1}{2}\sqrt{\tau_t}.
+\]
+Since
+\[
+d_1
+=
+\frac{\log(S_t/K)+(r+\sigma^2/2)\tau_t}{\sigma\sqrt{\tau_t}},
+\]
+the previous derivative can be rewritten as
+\[
+\frac{\partial d_2}{\partial \sigma}=-\frac{d_1}{\sigma}.
+\]
+Hence
+\[
+g'(\sigma)=e^{-r\tau_t}\phi(d_{2,t}(\sigma))\frac{\partial d_{2,t}(\sigma)}{\partial \sigma},
+\]
+\[
+\qquad
+g'(\sigma)
+=
+-\,e^{-r\tau_t}\phi(d_2)\frac{d_1}{\sigma}.
+\]
+Thus the digital-price sensitivity to volatility can be written in closed form entirely in terms of $(d_1,d_2)$, as summarized in Proposition~\ref{prop:digital-sensitivity}.
+
+The volatility standard error is derived from a first-order inversion argument. A local perturbation of the root condition $F_t(\hat{\sigma}_t)=0$ yields
+\[
+0
+\approx
+dF_t
+=
+\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)\,d\hat{\sigma}_t
+-dC_{mkt,t},
+\]
+so that
+\[
+d\hat{\sigma}_t
+\approx
+\frac{dC_{mkt,t}}
+{\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)}.
+\]
+Taking variances gives
+\[
+\operatorname{Var}(\hat{\sigma}_t)
+\approx
+\frac{\operatorname{Var}(C_{mkt,t})}
+{\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)^2},
+\qquad
+SE(\hat{\sigma}_t)
+\approx
+\frac{SE(C_{mkt,t})}
+{\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)}.
+\]
+A practical proxy for the option-price standard error is
+\[
+SE(C_{mkt,t})
+=
+\max\!\left\{\frac{1}{2}(C^{high}_t-C^{low}_t),\,0.01\,|C_{mkt,t}|,\,10^{-10}\right\},
+\]
+which forces a strictly positive uncertainty scale even for very small observed option prices. Consequently,
+\[
+\widehat{\operatorname{Var}}(P_{fair,t})
+=
+\left(g'(\hat{\sigma}_t)\,SE(\hat{\sigma}_t)\right)^2.
+\]
+Equivalently,
+\[
+SE(P_{fair,t})
+\approx
+\left|g'(\hat{\sigma}_t)\right|\,SE(\hat{\sigma}_t),
+\]
+which is the first-order delta-method standard error for the option-implied binary price. The underlying first-order inversion and variance argument is collected in Proposition~\ref{prop:iv-delta}.
+
+\subsection{Friction-adjusted interval}
+The paper distinguishes statistical uncertainty from economic frictions. The statistical standard error of the digital benchmark is
+\[
+SE(P_{fair,t})=\sqrt{\widehat{\operatorname{Var}}(P_{fair,t})}.
+\]
+The friction term is defined by
+\[
+TF_t=(f_B+f_P)+\frac{s_{B,t}+s_P}{2}.
+\]
+Here $s_{B,t}$ is either the observed relative option bid--ask spread or, if quoted bid and ask are unavailable, a proxy formed from the option and spot high--low range. The friction-adjusted interval is
+\[
+CI_{adj,t}
+=
+\left[
+P_{fair,t}-1.96\,SE(P_{fair,t})-TF_t,\,
+P_{fair,t}+1.96\,SE(P_{fair,t})+TF_t
+\right].
+\]
+This interval is not a formal confidence interval for a structural parameter. Rather, it is an economically adjusted band that combines statistical uncertainty with explicit transaction-cost terms. An observation for which $P_{poly,t}\notin CI_{adj,t}$ is therefore informative about economically material disagreement, not merely about asymptotic sampling error.
+
+\subsection{Discrepancy process and hypothesis testing}
+The central empirical object is
+\[
+D_t=P_{poly,t}-P_{fair,t}.
+\]
+The null hypothesis of average pricing equivalence is
+\[
+H_0:\mathbb{E}[D_t]=0,
+\qquad
+H_1:\mathbb{E}[D_t]\neq 0.
+\]
+The baseline test statistic is the one-sample Student statistic
+\[
+t_n=\frac{\bar{D}_n}{s_D/\sqrt{n}},
+\qquad
+\bar{D}_n=\frac{1}{n}\sum_{t=1}^n D_t.
+\]
+Because the discrepancy series is observed at hourly frequency and may be serially dependent, the paper supplements this classical statistic with HAC confidence intervals based on the Newey--West covariance estimator \citep{newey1987}. In addition, it reports circular block-bootstrap confidence intervals for the sample mean, using dependence-preserving blocks of length approximately $n^{1/3}$.
+
+Discrete pricing on Polymarket also induces mechanical observation noise. If the latent continuous price is rounded to the nearest tick and the rounding error is modeled as uniformly distributed on $[-\Delta_P/2,\Delta_P/2]$, then
+\[
+\mathbb{E}[\varepsilon_P]=0,
+\qquad
+\operatorname{Var}(\varepsilon_P)=\frac{\Delta_P^2}{12}.
+\]
+Combining this term with the delta-method variance of $P_{fair,t}$ yields a descriptive approximation to the discrepancy variance:
+\[
+\operatorname{Var}(D_t)
+\approx
+\operatorname{Var}(P_{fair,t})+\frac{\Delta_P^2}{12},
+\qquad
+SE(D_t)
+\approx
+\sqrt{\widehat{\operatorname{Var}}(P_{fair,t})+\frac{\Delta_P^2}{12}}.
+\]
+The approximation is not used as the main inferential device for the time-series mean, but it is useful for measuring observation-level uncertainty in the discrepancy itself. A formal statement appears in Proposition~\ref{prop:tick-noise}.
+
+\subsection{Dynamic specification}
+To study persistence, the discrepancy is modeled in discrete time as
+\[
+D_t = a + \phi D_{t-1} + u_t.
+\]
+When $|\phi|<1$, this process is covariance stationary and corresponds to the Euler discretization of an Ornstein--Uhlenbeck process
+\[
+dD_t = \kappa(\theta-D_t)\,dt + \sigma_D\,dW_t,
+\]
+with $\phi \approx e^{-\kappa \Delta t}$ over interval length $\Delta t$. The long-run mean is $\theta=a/(1-\phi)$ and the half-life of deviations is
+\[
+h_{1/2}=\frac{\log 0.5}{\log \phi},
+\]
+measured in hours when $\Delta t$ is one hour. The paper reports both the AR(1) estimate and the Augmented Dickey--Fuller test for the null of a unit root \citep{dickey1979}.
+
+\section{Empirical Findings}
+\subsection{Main market}
+The main specification studies the Polymarket contract ``Will the price of Bitcoin be above \$70{,}000 on March 23?'' matched to Deribit option \texttt{BTC-23MAR26-70000-C}. The aligned sample contains $78$ hourly observations (forty-five-day lookback as of the last artifact build). Sample averages of the key inputs are
+\[
+\overline{C_{mkt}} = 930.89,
+\qquad
+\overline{S_t} = 69{,}970.95,
+\qquad
+\overline{P_{poly}} = 0.5014,
+\qquad
+\overline{P_{fair}} = 0.4971.
+\]
+Thus the raw means place Polymarket only slightly above the option-implied benchmark in this narrow window.
+
+The corresponding discrepancy summary is
+\[
+\bar{D}=0.0043,
+\qquad
+s_D=0.0370.
+\]
+
+Table~\ref{tab:main} collects the principal inferential quantities.
+
+\begin{table}[H]
+\centering
+\caption{Main-market results: BTC above \$70{,}000 on March 23, 2026}
+\label{tab:main}
+\begin{threeparttable}
+\begin{tabular}{lc}
+\toprule
+Statistic & Value \\
+\midrule
+Aligned observations $n$ & 78 \\
+Mean discrepancy $\bar{D}$ & 0.0043 \\
+Standard deviation $s_D$ & 0.0370 \\
+One-sample $t$ statistic & 1.027 \\
+One-sample $p$ value & $0.308$ \\
+HAC 95\% CI for $\mathbb{E}[D_t]$ & [$-0.0072$, $0.0158$] \\
+Block-bootstrap 95\% CI for $\mathbb{E}[D_t]$ & [$-0.0085$, $0.0150$] \\
+Mean friction term $\overline{TF_t}$ & 0.0078 \\
+Mean digital standard error $\overline{SE(P_{fair,t})}$ & 0.0025 \\
+Share of observations with $P_{poly,t}\notin CI_{adj,t}$ & 0.714 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes.} Significance stars (when used elsewhere) follow the two-sided one-sample test of $H_0:\mathbb{E}[D_t]=0$: * $p<0.10$, ** $p<0.05$, *** $p<0.01$. Here $\bar{D}$ is not starred because $p>0.10$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+For this contract, neither the classical $t$ test nor the HAC or block-bootstrap intervals reject $\mathbb{E}[D_t]=0$ at the 5\% level. A large fraction of hours still lie outside $CI_{adj,t}$, reflecting tight digital standard errors under the scalar friction specification rather than a large mean wedge.
+
+Figure~\ref{fig:main_ts} visualizes the main time series. The upper panel compares $P_{poly,t}$ with $P_{fair,t}$ and the friction-adjusted interval. The lower panel shows the discrepancy process $D_t$ directly.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.84\textwidth]{figures_deribit_recent/main_timeseries.pdf}
+\caption{Main-market time series (March 23, 2026, \$70{,}000 threshold). The upper panel plots the Polymarket Yes price, the Deribit-implied digital benchmark, and the friction-adjusted interval. The lower panel plots $D_t=P_{poly,t}-P_{fair,t}$.}
+\label{fig:main_ts}
+\end{figure}
+
+\subsection{Pooled evidence}
+The paper stacks three \$70{,}000 threshold markets with listed Deribit dailies (February 23, March 23, and March 24, 2026). The pooled panel contains $515$ aligned hourly observations. The pooled sample mean is
+\[
+\bar{D}_{pool}=-0.0212,
+\]
+with HAC confidence interval $[-0.0298,\,-0.0126]$ and block-bootstrap confidence interval $[-0.0317,\,-0.0127]$. The corresponding one-sample statistic is $t=-9.32$ with $p=3.32\times 10^{-19}$. Thus the pooled evidence \emph{rejects} $\mathbb{E}[D]=0$ in favor of a negative average wedge in this stacked sample.
+
+The decomposition in Table~\ref{tab:markets} shows that the pooled sign is driven mainly by the February contract, where $\overline{P}_{poly}$ was near zero for much of the window while $\overline{P}_{fair}$ remained an order of magnitude larger, producing a sharply negative mean $D$. The March 23 market is centered near zero, while March 24 exhibits a modest positive mean.
+
+Figure~\ref{fig:pooled_panels} summarizes the pooled evidence in compact form: panel~\subref{fig:pooled_hist} shows the pooled distribution of the discrepancy, while panel~\subref{fig:market_means} reports market-specific mean estimates with HAC confidence intervals.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.47\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figures_deribit_recent/pooled_histogram.pdf}
+\caption{Pooled discrepancy distribution.}
+\label{fig:pooled_hist}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figures_deribit_recent/market_means.pdf}
+\caption{Market-level mean discrepancy estimates.}
+\label{fig:market_means}
+\end{subfigure}
+\caption{Pooled evidence across three 2026 \$70{,}000 threshold markets. Panel~\subref{fig:pooled_hist} plots the distribution of $D_t$. Panel~\subref{fig:market_means} reports market-specific mean estimates with 95\% HAC confidence intervals.}
+\label{fig:pooled_panels}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Market-level summary (2026 sample)}
+\label{tab:markets}
+\begin{threeparttable}
+\begin{tabular}{lcccc}
+\toprule
+Market & $n$ & Mean $D$ & 95\% HAC CI & Share outside $CI_{adj}$ \\
+\midrule
+BTC above \$70{,}000 on Feb 23, 2026 & 384 & $-0.0320$*** & [$-0.0420$, $-0.0221$] & 0.872 \\
+BTC above \$70{,}000 on Mar 23, 2026 & 78 & $0.0043$ & [$-0.0072$, $0.0158$] & 0.705 \\
+BTC above \$70{,}000 on Mar 24, 2026 & 53 & $0.0197$*** & [$0.0156$, $0.0238$] & 0.774 \\
+Pooled panel & 515 & $-0.0212$*** & [$-0.0298$, $-0.0126$] & 0.837 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes.} Significance stars are based on the two-sided one-sample test of $H_0:\mathbb{E}[D_t]=0$: * $p<0.10$, ** $p<0.05$, *** $p<0.01$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\subsection{Persistence and mean reversion}
+For the March 23 main market, the Augmented Dickey--Fuller statistic equals $-5.3813$ with $p\approx 3.7\times 10^{-6}$, so the null of a unit root is rejected. The autoregressive estimate (HAC standard error) is
+\[
+\hat{\phi}=0.4356 \pm 0.1386,
+\]
+which implies an approximate half-life of $0.83$ hours when $0<\hat{\phi}<1$. Thus, in this short post-listing window, the discrepancy behaves like a stationary but quickly mean-reverting residual rather than a random walk level.
+
+That distinction matters for interpretation. A stationary but persistent discrepancy is entirely consistent with slow information transmission, segmented trader bases, heterogeneous collateral constraints, or venue-specific inventory effects. It is not consistent with the stronger claim that the observed deviations are merely independent measurement noise around a common latent benchmark.
+
+\section{Discussion}
+The 2026 evidence is not a mechanical repeat of the 2023 archive findings. The principal March contract is statistically compatible with $\mathbb{E}[D]=0$, while the stacked three-market panel rejects zero because of a long February episode with very low Polymarket Yes prices relative to the Deribit-implied digital. Interpretation requires care.
+
+First, the benchmark is model based. The digital value is obtained under Black--Scholes, which imposes lognormal dynamics, continuous trading, and a constant volatility parameter over the option horizon. Those assumptions are standard for constructing an implied benchmark, but they are not literally true in cryptocurrency markets. The empirical result should therefore be read as a deviation from the Black--Scholes-implied risk-neutral benchmark, not as a direct statement about physical probabilities.
+
+Second, contract equivalence is \textbf{imperfect in a new way}: Polymarket's published resolution rule for these events references Binance BTC/USDT, while $P_{fair}$ is built from Deribit option and perpetual prices. A joint test of ``same economic event'' therefore confounds venue basis with genuine belief differences.
+
+Third, the spot input is the perpetual futures close rather than the Binance spot price used in resolution, and the option mark is converted from BTC to USD off that close.
+
+Fourth, the pooled panel is ad hoc but \textbf{discoverable}: new dates and strikes appear weekly. The helper script \texttt{discover\_polymarket\_deribit\_pairs.py} lists Gamma markets whose Deribit names verify under \texttt{get\_instrument}, so the empirical design can track the live menu rather than freezing 2023 ids forever.
+
+\section{Conclusion}
+This paper develops a disciplined comparison between prediction-market prices and option-implied risk-neutral binary values. The empirical design is deliberately narrow: recover implied volatility from a listed vanilla call, convert that estimate into a digital benchmark with matching strike and maturity, propagate estimation uncertainty through the delta method, incorporate explicit trading frictions, and test whether the prediction-market price differs systematically from the option-implied value.
+
+Applied to Deribit hourly candles and Polymarket's 2026 ``Bitcoin above on date'' series, the procedure yields a \textbf{mixed} picture. The March 23 main market ($n=78$) has $\bar{D}=0.0043$ with intervals that include zero. The pooled three-market panel ($n=515$) has $\bar{D}_{pool}=-0.0212$ with HAC and bootstrap intervals strictly negative, driven by the February subsample.
+
+The substantive lesson is that fully live, expiry-matched replication is feasible using Gamma search plus Deribit listings, but economic conclusions are sensitive to which calendar listings enter the stack and to the Binance--Deribit reference spread. Re-running \texttt{build\_paper\_artifacts\_deribit\_recent.py} before finalizing tables is essential. A natural extension is to use a single price feed for both resolution and $S_t$, or to model the basis explicitly.
+
+\appendix
+
+\section{Analytical Derivations}
+
+\begin{proposition}[Risk-neutral valuation of the binary payoff]
+\label{prop:digital-price}
+Let $S$ follow Black--Scholes dynamics under the risk-neutral measure,
+\[
+\frac{dS_t}{S_t}=r\,dt+\sigma\,dW_t^{\mathbb{Q}},
+\]
+with constant $r$ and $\sigma$. Consider the unit payoff $\mathbf{1}\{S_T>K\}$ at maturity $T$. Then its time-$t$ value is
+\[
+P_{fair,t}=e^{-r\tau}\Phi(d_2),
+\qquad
+\tau=T-t,
+\]
+where
+\[
+d_2=\frac{\log(S_t/K)+(r-\sigma^2/2)\tau}{\sigma\sqrt{\tau}}
+=
+\frac{\log(S_t/K)+(r+\sigma^2/2)\tau}{\sigma\sqrt{\tau}}-\sigma\sqrt{\tau}.
+\]
+\end{proposition}
+
+\begin{proof}
+Under $\mathbb{Q}$,
+\[
+\log S_T
+=
+\log S_t+\left(r-\frac{1}{2}\sigma^2\right)\tau+\sigma\sqrt{\tau}\,Z,
+\qquad
+Z\sim N(0,1).
+\]
+Therefore
+\[
+\mathbb{Q}(S_T>K\mid\mathcal{F}_t)
+=
+\mathbb{Q}\!\left(
+Z>
+\frac{\log(K/S_t)-\left(r-\sigma^2/2\right)\tau}{\sigma\sqrt{\tau}}
+\right)
+=
+\Phi(d_2).
+\]
+Discounting the unit payoff gives
+\[
+e^{-r\tau}\mathbb{E}^{\mathbb{Q}}\!\left[\mathbf{1}\{S_T>K\}\mid\mathcal{F}_t\right]
+=
+e^{-r\tau}\Phi(d_2),
+\]
+as claimed.
+\end{proof}
+
+\begin{proposition}[Black--Scholes vega]
+\label{prop:vega-formula}
+Let
+\[
+C_{BS}(S_t,K,r,\tau,\sigma)=S_t\Phi(d_1)-Ke^{-r\tau}\Phi(d_2),
+\]
+with
+\[
+d_1=\frac{\log(S_t/K)+(r+\sigma^2/2)\tau}{\sigma\sqrt{\tau}},
+\qquad
+d_2=d_1-\sigma\sqrt{\tau}.
+\]
+Then the volatility derivative of the Black--Scholes call price is
+\[
+\mathcal{V}(S_t,K,r,\tau,\sigma)
+=
+\frac{\partial C_{BS}}{\partial \sigma}(S_t,K,r,\tau,\sigma)
+=
+S_t\phi(d_1)\sqrt{\tau}.
+\]
+\end{proposition}
+
+\begin{proof}
+Differentiate the call price directly:
+\[
+\frac{\partial C_{BS}}{\partial \sigma}
+=
+S_t\phi(d_1)\frac{\partial d_1}{\partial \sigma}
+-Ke^{-r\tau}\phi(d_2)\frac{\partial d_2}{\partial \sigma}.
+\]
+Using the identity
+\[
+S_t\phi(d_1)=Ke^{-r\tau}\phi(d_2),
+\]
+the derivative becomes
+\[
+\frac{\partial C_{BS}}{\partial \sigma}
+=
+S_t\phi(d_1)\left(\frac{\partial d_1}{\partial \sigma}-\frac{\partial d_2}{\partial \sigma}\right).
+\]
+Since $d_2=d_1-\sigma\sqrt{\tau}$, one has
+\[
+\frac{\partial d_1}{\partial \sigma}-\frac{\partial d_2}{\partial \sigma}=\sqrt{\tau}.
+\]
+Hence
+\[
+\frac{\partial C_{BS}}{\partial \sigma}=S_t\phi(d_1)\sqrt{\tau}.
+\]
+\end{proof}
+
+\begin{proposition}[Volatility sensitivity of the binary price]
+\label{prop:digital-sensitivity}
+Let
+\[
+g(\sigma)=e^{-r\tau}\Phi(d_2(\sigma)),
+\qquad
+d_2(\sigma)=\frac{\log(S_t/K)+(r+\sigma^2/2)\tau}{\sigma\sqrt{\tau}}-\sigma\sqrt{\tau}.
+\]
+Then
+\[
+g'(\sigma)
+=
+e^{-r\tau}\phi(d_2)\frac{\partial d_2}{\partial \sigma}
+=
+-\,e^{-r\tau}\phi(d_2)\frac{d_1}{\sigma},
+\]
+where
+\[
+d_1=\frac{\log(S_t/K)+(r+\sigma^2/2)\tau}{\sigma\sqrt{\tau}}.
+\]
+\end{proposition}
+
+\begin{proof}
+By the chain rule,
+\[
+g'(\sigma)=e^{-r\tau}\phi(d_2)\frac{\partial d_2}{\partial \sigma}.
+\]
+Differentiate $d_2(\sigma)$:
+\[
+\frac{\partial d_2}{\partial \sigma}
+=
+\frac{\partial}{\partial \sigma}
+\left(
+\frac{\log(S_t/K)+(r+\sigma^2/2)\tau}{\sigma\sqrt{\tau}}-\sigma\sqrt{\tau}
+\right)
+=
+-\frac{\log(S_t/K)+r\tau}{\sigma^2\sqrt{\tau}}-\frac{1}{2}\sqrt{\tau}.
+\]
+Now observe that
+\[
+\frac{d_1}{\sigma}
+=
+\frac{\log(S_t/K)+(r+\sigma^2/2)\tau}{\sigma^2\sqrt{\tau}}
+=
+\frac{\log(S_t/K)+r\tau}{\sigma^2\sqrt{\tau}}+\frac{1}{2}\sqrt{\tau},
+\]
+which implies
+\[
+\frac{\partial d_2}{\partial \sigma}=-\frac{d_1}{\sigma}.
+\]
+Substituting into the chain rule identity yields
+\[
+g'(\sigma)=-\,e^{-r\tau}\phi(d_2)\frac{d_1}{\sigma}.
+\]
+\end{proof}
+
+\begin{proposition}[First-order volatility inversion and delta-method variance]
+\label{prop:iv-delta}
+Let
+\[
+F_t(\sigma)=C_{BS}(S_t,K,r,\tau_t^{(c)},\sigma)-C_{mkt,t},
+\]
+and suppose $\hat{\sigma}_t$ solves $F_t(\hat{\sigma}_t)=0$ with
+\[
+\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)
+=
+\frac{\partial C_{BS}}{\partial \sigma}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)\neq 0.
+\]
+Then a first-order perturbation of the option quote implies
+\[
+d\hat{\sigma}_t
+\approx
+\frac{dC_{mkt,t}}{\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)},
+\]
+so that
+\[
+\operatorname{Var}(\hat{\sigma}_t)
+\approx
+\frac{\operatorname{Var}(C_{mkt,t})}
+{\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)^2}.
+\]
+Consequently, if $P_{fair,t}=g(\hat{\sigma}_t)$, then
+\[
+\operatorname{Var}(P_{fair,t})
+\approx
+\left(g'(\hat{\sigma}_t)\right)^2
+\operatorname{Var}(\hat{\sigma}_t).
+\]
+\end{proposition}
+
+\begin{proof}
+By construction $F_t(\hat{\sigma}_t)=0$. A first-order perturbation gives
+\[
+0\approx dF_t
+=
+\frac{\partial C_{BS}}{\partial \sigma}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)\,d\hat{\sigma}_t-dC_{mkt,t}
+=
+\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)\,d\hat{\sigma}_t-dC_{mkt,t}.
+\]
+Rearranging yields
+\[
+d\hat{\sigma}_t\approx \frac{dC_{mkt,t}}{\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)}.
+\]
+Squaring and taking variances gives the inverse-vega approximation
+\[
+\operatorname{Var}(\hat{\sigma}_t)
+\approx
+\frac{\operatorname{Var}(C_{mkt,t})}
+{\mathcal{V}(S_t,K,r,\tau_t^{(c)},\hat{\sigma}_t)^2}.
+\]
+Applying the delta method to $P_{fair,t}=g(\hat{\sigma}_t)$ yields
+\[
+\operatorname{Var}(P_{fair,t})
+\approx
+\left(g'(\hat{\sigma}_t)\right)^2\operatorname{Var}(\hat{\sigma}_t).
+\]
+\end{proof}
+
+\begin{proposition}[Tick-noise contribution to discrepancy variance]
+\label{prop:tick-noise}
+Suppose the observed prediction-market price equals a latent continuous value plus rounding noise,
+\[
+P_{poly,t}^{obs}=P_{poly,t}^{\ast}+\varepsilon_t,
+\]
+where $\varepsilon_t\sim \mathrm{Unif}[-\Delta_P/2,\Delta_P/2]$. Then
+\[
+\mathbb{E}[\varepsilon_t]=0,
+\qquad
+\operatorname{Var}(\varepsilon_t)=\frac{\Delta_P^2}{12}.
+\]
+If the rounding noise is independent of the option-implied pricing error, the discrepancy variance satisfies the first-order approximation
+\[
+\operatorname{Var}(D_t)
+\approx
+\operatorname{Var}(P_{fair,t})+\frac{\Delta_P^2}{12}.
+\]
+\end{proposition}
+
+\begin{proof}
+For $\varepsilon_t\sim \mathrm{Unif}[-a,a]$ with $a=\Delta_P/2$,
+\[
+\mathbb{E}[\varepsilon_t]=0,
+\qquad
+\operatorname{Var}(\varepsilon_t)=\frac{a^2}{3}=\frac{\Delta_P^2}{12}.
+\]
+Writing
+\[
+D_t=P_{poly,t}^{obs}-P_{fair,t}
+=
+\left(P_{poly,t}^{\ast}-P_{fair,t}\right)+\varepsilon_t,
+\]
+and assuming $\varepsilon_t$ is independent of the option-implied pricing error gives
+\[
+\operatorname{Var}(D_t)
+=
+\operatorname{Var}(P_{poly,t}^{\ast}-P_{fair,t})+\operatorname{Var}(\varepsilon_t).
+\]
+Under the observation-level approximation used in the paper, the latent prediction-market component is treated as locally fixed relative to the uncertainty in $P_{fair,t}$, so the leading variance contribution is
+\[
+\operatorname{Var}(D_t)\approx \operatorname{Var}(P_{fair,t})+\frac{\Delta_P^2}{12}.
+\]
+\end{proof}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}
