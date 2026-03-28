@@ -1,5 +1,7 @@
 # Research datasets: Polymarket vs. options benchmarks
 
+**Repository:** [github.com/victoriaportnaya/polymarketbinance](https://github.com/victoriaportnaya/polymarketbinance)
+
 This folder holds **analysis-ready panels** built from public APIs/archives (not raw exchange dumps). Use it to reproduce tables and figures tied to the paper in `paper/main.tex`.
 
 ## Files (Binance + Polymarket)
