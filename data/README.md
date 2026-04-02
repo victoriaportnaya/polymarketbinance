@@ -12,6 +12,14 @@ This folder holds **analysis-ready panels** built from public APIs/archives (not
 | `market_summary.csv` | Per-market sample sizes, mean gap, HAC intervals, $t$-tests |
 | `results_summary.json` | Pooled statistics and per-market block copied for scripting |
 
+## Files (Backtest outputs)
+
+In `backtest/`:
+
+- `arbitrage_trades.csv` — trade-level results for the delta-hedged call proxy strategy  
+- `arbitrage_summary.csv` — per-market backtest summary (gross/net PnL, win rate, holding time, return metrics)  
+- `arbitrage_results.json` — pooled and market-level backtest summary for scripting and paper tables  
+
 ## Files (Deribit extension)
 
 In `deribit/`:

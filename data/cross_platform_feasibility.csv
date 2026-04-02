@@ -1,0 +1,4 @@
+asset,kalshi_series,earliest_kalshi_event,binance_option_underlying,latest_binance_eohsummary,same_period_overlap_available,notes
+BTC,KXBTCD,2024-12-16 14:00:00+00:00,BTCUSDT,2023-10-23 00:00:00+00:00,False,Kalshi starts after public Binance option archive ends.
+ETH,KXETHD,2024-12-16 02:00:00+00:00,ETHUSDT,2023-10-23 00:00:00+00:00,False,Kalshi starts after public Binance option archive ends.
+SOL,KXSOLD,2025-12-09 14:00:00+00:00,,,False,No Binance options archive under this asset.

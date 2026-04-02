@@ -1,0 +1,66 @@
+{
+  "venue": "deribit_eth",
+  "options_source": "Deribit public get_tradingview_chart_data (hourly)",
+  "spot_source": "Deribit ETH-PERPETUAL (hourly close)",
+  "pooled": {
+    "n": 2737,
+    "markets": 4,
+    "mean_D": 0.012866528895125014,
+    "hac_ci_lo": -1.5036168220745882e-05,
+    "hac_ci_hi": 0.025748093958470775,
+    "t_stat": 5.477027605762073,
+    "t_p_value": 4.718495739245696e-08,
+    "bootstrap_ci_lo": -0.001201543477002592,
+    "bootstrap_ci_hi": 0.028617499211945494
+  },
+  "markets": [
+    {
+      "market_id": "248578",
+      "market_label": "ETH above $1,700 on February 10",
+      "n": 941,
+      "mean_D": -0.01439686104059187,
+      "ci_lo": -0.025935920668749494,
+      "ci_hi": -0.0028578014124342466,
+      "t_stat": -5.755157348429406,
+      "p_value": 1.1710186728825618e-08,
+      "mean_p_poly": 0.07755636619972303,
+      "mean_p_fair": 0.0919532272403149
+    },
+    {
+      "market_id": "248658",
+      "market_label": "ETH above $1,700 on February 17",
+      "n": 799,
+      "mean_D": -0.01753756925122564,
+      "ci_lo": -0.033906722062529426,
+      "ci_hi": -0.001168416439921851,
+      "t_stat": -4.806744924746178,
+      "p_value": 1.8331722728595784e-06,
+      "mean_p_poly": 0.057759627468797314,
+      "mean_p_fair": 0.07529719672002293
+    },
+    {
+      "market_id": "248822",
+      "market_label": "ETH above $1,700 on February 24",
+      "n": 633,
+      "mean_D": -0.010006108892916914,
+      "ci_lo": -0.019821599936827812,
+      "ci_hi": -0.00019061784900601363,
+      "t_stat": -4.519040422627851,
+      "p_value": 7.415786921934947e-06,
+      "mean_p_poly": 0.1043012634088318,
+      "mean_p_fair": 0.1143073723017487
+    },
+    {
+      "market_id": "249345",
+      "market_label": "ETH above $1,700 on March 24",
+      "n": 364,
+      "mean_D": 0.18986132029148303,
+      "ci_lo": 0.14531344036558794,
+      "ci_hi": 0.23440920021737813,
+      "t_stat": 19.783548986628098,
+      "p_value": 1.2664881507355498e-59,
+      "mean_p_poly": 0.8967230810585362,
+      "mean_p_fair": 0.7068617607670532
+    }
+  ]
+}
